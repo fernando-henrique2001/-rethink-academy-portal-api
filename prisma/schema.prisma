@@ -1,0 +1,272 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator erd {
+  provider = "prisma-erd-generator"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// comente o datasource e insira o novo 
+// datasource db {
+//   provider = "sqlite"
+//   url      = "file:./dev.db"
+// }
+
+// comente também o enum Roles completo 
+// comente a linha socials Json?  dentro model Profile
+
+model User {
+  id             String          @id @default(uuid())
+  email          String          @unique
+  name           String?
+  surname        String?
+  role           Roles?          @default(STUDENT)
+  main           Titles?         @default(ENGINEERING)
+  avatar         String
+  watched        String[]
+  bucket         Bucket[]
+  badges         Badges?
+  tasks          Tasks[]
+  stickerNotes   StickerNotes[]
+  userCommented  Comments[]      @relation("UserCommented")
+  commmentAuthor Comments[]      @relation("CommmentAuthor")
+  cratedAt       DateTime        @default(now())
+  receiveGIF     String?
+  Note           Note[]
+  Info           Info?
+  GoalList       GoalList[]
+  MonthEvaluate  MonthEvaluate[]
+}
+
+enum Main {
+  ENGINEERING
+  DESIGN
+  PRODUCT
+  ALL
+}
+
+enum CourseStyle {
+  COURSE
+  WORKSHOP
+  TRAINING
+  LECTURE
+}
+
+enum Titles {
+  ENGINEERING
+  DESIGN
+  PRODUCT
+}
+
+enum Roles {
+  STUDENT
+  AMBASSADOR
+  RETHINKER
+}
+
+enum Levels {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Note {
+  id         String   @id @default(uuid())
+  title      String?
+  content    String?
+  // categories Json?
+  createdAt  DateTime @default(now())
+  categories String?
+  isPublic   Boolean  @default(false)
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+
+  @@map("note")
+}
+
+model Info {
+  id                    String  @id @default(uuid())
+  college               String?
+  semester              String?
+  workTime              String?
+  transportationVoucher String?
+  providedEquipment     String?
+  status                String?
+  user                  User    @relation(fields: [userId], references: [id])
+  userId                String  @unique
+
+  @@map("info")
+}
+
+model Badges {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  product     String[]
+  engineering String[]
+  academy     String[]
+  design      String[]
+  welcome     String[]
+  studies     String[]
+  timeRecord  String[]
+  goals       String[]
+
+  @@map("badges")
+}
+
+model GoalList {
+  id     String @id @default(uuid())
+  name   String
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+  goal   Goal[] @relation
+
+  @@map("goalList")
+}
+
+model Goal {
+  id         String   @id @default(uuid())
+  title      String
+  conclude   Boolean
+  goalList   GoalList @relation(fields: [goalListId], references: [id], onDelete: Cascade)
+  goalListId String
+
+  @@map("goal")
+}
+
+model MonthEvaluate {
+  id        String  @id @default(uuid())
+  user      User    @relation(fields: [userId], references: [id])
+  skillType Boolean @default(true)
+  userId    String
+  email     String
+  month     String
+  skill1    Int
+  skill2    Int
+  skill3    Int
+  skill4    Int
+  skill5    Int
+  skill6    Int
+
+  @@map("monthEvaluate")
+}
+
+model Bucket {
+  id     String @id @default(uuid())
+  title  String
+  url    String
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Trail {
+  id             String           @id @default(uuid())
+  name           String           @unique
+  description    String
+  weight         Int
+  imageUrl       String
+  course         Course[]
+  courseTimeline CourseTimeline[]
+  main           Main             @default(ENGINEERING)
+  cratedAt       DateTime         @default(now())
+
+  @@map("trail")
+}
+
+model Course {
+  id                 String      @id @default(uuid())
+  name               String
+  description        String
+  level              Levels
+  workload           Int
+  learning           String
+  skills             String
+  courseStyle        CourseStyle @default(COURSE)
+  imageTeacher       String
+  teacherDescription String
+  teacherName        String
+  trailId            String
+  trail              Trail       @relation(fields: [trailId], references: [id])
+  cratedAt           DateTime    @default(now())
+  modules            Module[]
+
+  @@map("course")
+}
+
+model Lesson {
+  id          String   @id @default(uuid())
+  name        String
+  embedUrl    String
+  description String
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  moduleId    String
+  cratedAt    DateTime @default(now())
+
+  @@map("lesson")
+}
+
+model Module {
+  id       String   @id @default(uuid())
+  name     String
+  course   Course   @relation(fields: [courseId], references: [id])
+  courseId String
+  lessons  Lesson[]
+  cratedAt DateTime @default(now())
+
+  @@map("module")
+}
+
+model CourseTimeline {
+  id       String   @id @default(uuid())
+  stage    String
+  start    DateTime
+  finish   DateTime
+  content  String
+  trail    Trail    @relation(fields: [trailId], references: [id])
+  trailId  String
+  cratedAt DateTime @default(now())
+
+  @@map("timeline")
+}
+
+model Tasks {
+  id          String   @id @default(uuid())
+  name        String
+  taskDate    DateTime
+  startTime   String
+  endTime     String
+  tags        String   @default("tags")
+  status      String   @default("status")
+  description String   @default("description")
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+
+  @@map("tasks")
+}
+
+model Comments {
+  id               String  @id @default(uuid())
+  text             String
+  user             User    @relation(name: "UserCommented", fields: [userId], references: [id])
+  userId           String
+  CommmentAuthor   User?   @relation(name: "CommmentAuthor", fields: [CommmentAuthorId], references: [id])
+  CommmentAuthorId String?
+
+  @@map("comments")
+}
+
+model StickerNotes {
+  id          String    @id @default(uuid())
+  description String
+  data        DateTime? @default(now())
+  priority    Int?      @default(3)
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+
+  @@map("stickerNotes")
+}
